@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MEZACER - Suivi De Tâches</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome pour les icônes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+        }
+        .mezacer-header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-bottom: 4px solid #10b981;
+        }
+        .table-header {
+            background-color: #059669;
+            color: white;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- En-tête style MEZACER -->
+    <header class="mezacer-header text-white shadow-lg py-4 px-6 md:px-10 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-4">
+            <!-- Logo simulé aux couleurs de MEZACER -->
+            <div class="bg-white p-2 rounded-lg shadow-md flex items-center justify-center border border-slate-700">
+                <div class="text-center">
+                    <span class="text-blue-900 font-extrabold text-xl tracking-wider block">MEZACER</span>
+                    <span class="text-[9px] text-slate-600 block uppercase font-semibold">Génie civil, Télécom & Divers</span>
+                </div>
+            </div>
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold tracking-wide">Suivi De Tâches</h1>
+                <p class="text-xs text-emerald-400 font-medium">Tableau de bord de gestion opérationnelle</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="openModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-semibold shadow transition flex items-center gap-2 text-sm">
+                <i class="fa-solid fa-plus"><span>Nouvelle Tâche</span></i>
+            </button>
+            <button onclick="exportData()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-semibold shadow transition flex items-center gap-2 text-sm">
+                <i class="fa-solid fa-download"><span>Exporter CSV</span></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Contenu Principal -->
+    <main class="flex-grow p-4 md:p-8 max-w-7xl mx-auto w-full space-y-6">
+
+        <!-- Statistiques rapides -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-500 font-medium uppercase">Total Tâches</p>
+                    <h3 id="statTotal" class="text-2xl font-bold text-slate-800">0</h3>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-list-check"></i>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-500 font-medium uppercase">À Démarrer</p>
+                    <h3 id="statDemarrer" class="text-2xl font-bold text-amber-600">0</h3>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-clock"></i>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-500 font-medium uppercase">En Cours</p>
+                    <h3 id="statEnCours" class="text-2xl font-bold text-blue-600">0</h3>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-spinner"></i>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-500 font-medium uppercase">Terminées (100%)</p>
+                    <h3 id="statTermine" class="text-2xl font-bold text-emerald-600">0</h3>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtres et Recherche -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <div class="relative flex-grow md:w-64">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                        <i class="fa-solid fa-search"></i>
+                    </span>
+                    <input type="text" id="searchInput" oninput="renderTable()" placeholder="Rechercher une tâche..." class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <select id="filterService" onchange="renderTable()" class="py-2 px-3 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="">Tous les services</option>
+                    <option value="Logistique">Logistique</option>
+                    <option value="BET">BET</option>
+                    <option value="Administration">Administration</option>
+                    <option value="Opération">Opération</option>
+                    <option value="Finance">Finance</option>
+                </select>
+                <select id="filterStatut" onchange="renderTable()" class="py-2 px-3 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="">Tous les statuts</option>
+                    <option value="A Démarrer">A Démarrer</option>
+                    <option value="En Cours">En Cours</option>
+                    <option value="Terminé">Terminé</option>
+                </select>
+            </div>
+            <div class="text-xs text-slate-500 font-medium">
+                Affichage de <span id="countDisplay">0</span> tâches
+            </div>
+        </div>
+
+        <!-- Tableau des Tâches -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="table-header text-xs uppercase tracking-wider font-semibold">
+                            <th class="py-3 px-4 border-b border-emerald-700 w-12 text-center">N°</th>
+                            <th class="py-3 px-4 border-b border-emerald-700">Description</th>
+                            <th class="py-3 px-4 border-b border-emerald-700">Demandé par</th>
+                            <th class="py-3 px-4 border-b border-emerald-700">Attribué à</th>
+                            <th class="py-3 px-4 border-b border-emerald-700">Service</th>
+                            <th class="py-3 px-4 border-b border-emerald-700">Date de début</th>
+                            <th class="py-3 px-4 border-b border-emerald-700">Échéance</th>
+                            <th class="py-3 px-4 border-b border-emerald-700 text-center">KPI Délai</th>
+                            <th class="py-3 px-4 border-b border-emerald-700 text-center">Priorité</th>
+                            <th class="py-3 px-4 border-b border-emerald-700 w-36">Progression (% achevé)</th>
+                            <th class="py-3 px-4 border-b border-emerald-700 text-center">Statut</th>
+                            <th class="py-3 px-4 border-b border-emerald-700 text-center w-20">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="taskTableBody" class="divide-y divide-slate-200 text-slate-700">
+                        <!-- Rempli dynamiquement -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Pied de page -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-4 text-center border-t border-slate-800 mt-auto">
+        MEZACER - Système de Suivi De Tâches &copy; 2026. Tous droits réservés.
+    </footer>
+
+    <!-- MODAL AJOUT / MODIFICATION -->
+    <div id="taskModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden transform transition-all">
+            <div class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
+                <h3 id="modalTitle" class="font-bold text-lg">Nouvelle Tâche</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white text-xl">&times;</button>
+            </div>
+            <form id="taskForm" onsubmit="saveTask(event)" class="p-6 space-y-4">
+                <input type="hidden" id="taskId">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Description de la tâche</label>
+                    <input type="text" id="taskDesc" required placeholder="Ex: Inventaire Stock WH" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Demandé par</label>
+                        <select id="taskRequester" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="CEO">CEO</option>
+                            <option value="Project Manager">Project Manager</option>
+                            <option value="DAF">DAF</option>
+                            <option value="Directeur Technique">Directeur Technique</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Attribué à</label>
+                        <input type="text" id="taskAssignee" required placeholder="Ex: Hocine Amghar / Said" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Service</label>
+                        <select id="taskService" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="Logistique">Logistique</option>
+                            <option value="BET">BET</option>
+                            <option value="Administration">Administration</option>
+                            <option value="Opération">Opération</option>
+                            <option value="Finance">Finance</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Priorité</label>
+                        <select id="taskPriority" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="Haute">Haute (Rouge)</option>
+                            <option value="Moyenne">Moyenne (Rose)</option>
+                            <option value="Basse">Basse (Gris)</option>
+                            <option value="Important">Important (Vert)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Date de début</label>
+                        <input type="date" id="taskStartDate" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Échéance</label>
+                        <input type="date" id="taskDueDate" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">% Achevé (<span id="progressVal">0</span>%)</label>
+                        <input type="range" id="taskProgress" min="0" max="100" value="0" oninput="document.getElementById('progressVal').innerText = this.value" class="w-full accent-emerald-600 mt-2">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Statut</label>
+                        <select id="taskStatus" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="A Démarrer">A Démarrer</option>
+                            <option value="En Cours">En Cours</option>
+                            <option value="Terminé">Terminé</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition">Annuler</button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Message Box Personnalisée (pas d'alert) -->
+    <div id="msgModal" class="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-xl shadow-lg max-w-sm w-full p-6 text-center space-y-4">
+            <div id="msgIcon" class="text-3xl text-emerald-600">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <p id="msgText" class="text-sm font-medium text-slate-700">Message...</p>
+            <button onclick="closeMsgModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-2 rounded-lg text-sm font-semibold transition">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // Données initiales basées sur votre tableau MEZACER
+        let tasks = [
+            { id: 1, desc: "Inventaire Stock WH", requester: "Project Manager", assignee: "Said", service: "Logistique", startDate: "2026-11-11", dueDate: "2026-11-16", priority: "Haute", progress: 0, status: "A Démarrer" },
+            { id: 2, desc: "Devis quantitatif & estimatif Cloture 12x10", requester: "CEO", assignee: "Hocine Amghar", service: "BET", startDate: "2026-11-09", dueDate: "2026-11-12", priority: "Moyenne", progress: 25, status: "En Cours" },
+            { id: 3, desc: "Prépartion DPM 18m", requester: "Project Manager", assignee: "Hocine Amghar", service: "BET", startDate: "2026-11-05", dueDate: "2026-11-10", priority: "Basse", progress: 75, status: "En Cours" },
+            { id: 4, desc: "Réorganisation stokage WH", requester: "CEO", assignee: "Said", service: "Logistique", startDate: "2026-11-15", dueDate: "2026-12-15", priority: "Important", progress: 0, status: "A Démarrer" },
+            { id: 5, desc: "Préparation Organigramme", requester: "CEO", assignee: "DAF", service: "Administration", startDate: "2026-11-04", dueDate: "2026-11-15", priority: "Important", progress: 25, status: "En Cours" },
+            { id: 6, desc: "Préparer une analyse globale sur le fichier CW", requester: "CEO", assignee: "Project Manager", service: "Opération", startDate: "2026-11-10", dueDate: "2026-11-17", priority: "Haute", progress: 0, status: "A Démarrer" },
+            { id: 7, desc: "Etude de cout par sites", requester: "CEO", assignee: "Project Manager", service: "Opération", startDate: "2026-11-10", dueDate: "2026-11-17", priority: "Haute", progress: 0, status: "A Démarrer" },
+            { id: 8, desc: "Exercice de rentabilité avec le mat Mezacer", requester: "CEO", assignee: "Project Manager", service: "Opération", startDate: "2026-11-10", dueDate: "2026-11-17", priority: "Haute", progress: 0, status: "A Démarrer" }
+        ];
+
+        // Charger depuis localStorage s'il y en a
+        if (localStorage.getItem('mezacer_tasks')) {
+            try {
+                tasks = JSON.parse(localStorage.getItem('mezacer_tasks'));
+            } catch(e) { console.error(e); }
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('mezacer_tasks', JSON.stringify(tasks));
+        }
+
+        // Affichage des messages personnalisés
+        function showMessage(text, isError = false) {
+            document.getElementById('msgText').innerText = text;
+            const icon = document.getElementById('msgIcon');
+            if(isError) {
+                icon.className = "text-3xl text-red-600";
+                icon.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i>';
+            } else {
+                icon.className = "text-3xl text-emerald-600";
+                icon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+            }
+            document.getElementById('msgModal').classList.remove('hidden');
+        }
+
+        function closeMsgModal() {
+            document.getElementById('msgModal').classList.add('hidden');
+        }
+
+        // Gestion du Modal Formulaire
+        function openModal(editId = null) {
+            document.getElementById('taskModal').classList.remove('hidden');
+            if (editId !== null) {
+                document.getElementById('modalTitle').innerText = "Modifier la Tâche";
+                const t = tasks.find(item => item.id === editId);
+                if (t) {
+                    document.getElementById('taskId').value = t.id;
+                    document.getElementById('taskDesc').value = t.desc;
+                    document.getElementById('taskRequester').value = t.requester;
+                    document.getElementById('taskAssignee').value = t.assignee;
+                    document.getElementById('taskService').value = t.service;
+                    document.getElementById('taskStartDate').value = t.startDate;
+                    document.getElementById('taskDueDate').value = t.dueDate;
+                    document.getElementById('taskPriority').value = t.priority;
+                    document.getElementById('taskProgress').value = t.progress;
+                    document.getElementById('progressVal').innerText = t.progress;
+                    document.getElementById('taskStatus').value = t.status;
+                }
+            } else {
+                document.getElementById('modalTitle').innerText = "Nouvelle Tâche";
+                document.getElementById('taskForm').reset();
+                document.getElementById('taskId').value = "";
+                document.getElementById('taskProgress').value = 0;
+                document.getElementById('progressVal').innerText = "0";
+                // Dates par défaut (aujourd'hui)
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('taskStartDate').value = today;
+                document.getElementById('taskDueDate').value = today;
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('taskModal').classList.add('hidden');
+        }
+
+        // Enregistrer une tâche (Ajout ou Modification)
+        function saveTask(e) {
+            e.preventDefault();
+            const idVal = document.getElementById('taskId').value;
+            const desc = document.getElementById('taskDesc').value;
+            const requester = document.getElementById('taskRequester').value;
+            const assignee = document.getElementById('taskAssignee').value;
+            const service = document.getElementById('taskService').value;
+            const startDate = document.getElementById('taskStartDate').value;
+            const dueDate = document.getElementById('taskDueDate').value;
+            const priority = document.getElementById('taskPriority').value;
+            const progress = parseInt(document.getElementById('taskProgress').value);
+            const status = document.getElementById('taskStatus').value;
+
+            if (idVal) {
+                // Modification
+                const index = tasks.findIndex(item => item.id == idVal);
+                if (index !== -1) {
+                    tasks[index] = { id: parseInt(idVal), desc, requester, assignee, service, startDate, dueDate, priority, progress, status };
+                }
+                showMessage("Tâche modifiée avec succès !");
+            } else {
+                // Ajout
+                const newId = tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
+                tasks.push({ id: newId, desc, requester, assignee, service, startDate, dueDate, priority, progress, status });
+                showMessage("Nouvelle tâche ajoutée avec succès !");
+            }
+
+            saveToStorage();
+            closeModal();
+            renderTable();
+        }
+
+        // Suppression de tâche
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            saveToStorage();
+            renderTable();
+            showMessage("Tâche supprimée.");
+        }
+
+        // Style des priorités comme sur l'image
+        function getPriorityBadge(priority) {
+            switch(priority) {
+                case 'Haute':
+                    return `<span class="bg-red-600 text-white px-3 py-1 rounded text-xs font-bold block text-center shadow-sm">Haute</span>`;
+                case 'Moyenne':
+                    return `<span class="bg-rose-200 text-rose-900 px-3 py-1 rounded text-xs font-semibold block text-center">Moyenne</span>`;
+                case 'Basse':
+                    return `<span class="bg-slate-200 text-slate-700 px-3 py-1 rounded text-xs font-semibold block text-center">Basse</span>`;
+                case 'Important':
+                    return `<span class="bg-emerald-700 text-white px-3 py-1 rounded text-xs font-bold block text-center shadow-sm">Important</span>`;
+                default:
+                    return `<span class="bg-slate-100 text-slate-800 px-3 py-1 rounded text-xs block text-center">${priority}</span>`;
+            }
+        }
+
+        // Fonction pour calculer le KPI Différence / Retard par rapport à l'échéance
+        function getKpiBadge(dueDateStr, progress) {
+            if (progress === 100) {
+                return `<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded text-xs font-bold block text-center">Terminé</span>`;
+            }
+            if (!dueDateStr) return `-`;
+            
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const due = new Date(dueDateStr);
+            due.setHours(0,0,0,0);
+
+            const diffTime = due - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays < 0) {
+                return `<span class="bg-red-100 text-red-700 border border-red-300 px-2.5 py-1 rounded text-xs font-bold block text-center shadow-sm">Retard: ${Math.abs(diffDays)} j</span>`;
+            } else if (diffDays === 0) {
+                return `<span class="bg-amber-100 text-amber-800 border border-amber-300 px-2.5 py-1 rounded text-xs font-bold block text-center">Échéance ajd</span>`;
+            } else if (diffDays <= 3) {
+                return `<span class="bg-orange-100 text-orange-800 px-2.5 py-1 rounded text-xs font-semibold block text-center">${diffDays} j restants</span>`;
+            } else {
+                return `<span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-xs font-semibold block text-center">${diffDays} j restants</span>`;
+            }
+        }
+
+        // Fonction pour déterminer la couleur de la barre de progression selon le pourcentage
+        function getProgressColor(progress) {
+            if (progress === 100) {
+                return 'bg-emerald-500'; // Vert à 100%
+            } else if (progress > 50) {
+                return 'bg-amber-500'; // Orange entre 51% et 99%
+            } else {
+                return 'bg-rose-500';  // Rouge de 0% à 50%
+            }
+        }
+
+        // Format date inversée JJ/MM/AAAA si format US
+        function formatDate(dateStr) {
+            if(!dateStr) return '';
+            const parts = dateStr.split('-');
+            if(parts.length === 3) {
+                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+            return dateStr;
+        }
+
+        // Rendu du tableau
+        function renderTable() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const filterService = document.getElementById('filterService').value;
+            const filterStatut = document.getElementById('filterStatut').value;
+
+            const filtered = tasks.filter(t => {
+                const matchSearch = t.desc.toLowerCase().includes(search) || t.assignee.toLowerCase().includes(search) || t.requester.toLowerCase().includes(search);
+                const matchService = filterService === "" || t.service === filterService;
+                const matchStatut = filterStatut === "" || t.status === filterStatut;
+                return matchSearch && matchService && matchStatut;
+            });
+
+            const tbody = document.getElementById('taskTableBody');
+            tbody.innerHTML = "";
+
+            // Mise à jour des stats
+            document.getElementById('statTotal').innerText = tasks.length;
+            document.getElementById('statDemarrer').innerText = tasks.filter(t => t.status === 'A Démarrer').length;
+            document.getElementById('statEnCours').innerText = tasks.filter(t => t.status === 'En Cours').length;
+            document.getElementById('statTermine').innerText = tasks.filter(t => t.status === 'Terminé' || t.progress === 100).length;
+            document.getElementById('countDisplay').innerText = filtered.length;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="12" class="text-center py-8 text-slate-400 italic">Aucune tâche trouvée</td></tr>`;
+                return;
+            }
+
+            filtered.forEach((t, index) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+
+                const barColorClass = getProgressColor(t.progress);
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-bold text-center text-slate-500">${index + 1}</td>
+                    <td class="py-3 px-4 font-medium text-slate-800">${t.desc}</td>
+                    <td class="py-3 px-4 font-semibold text-slate-700">${t.requester}</td>
+                    <td class="py-3 px-4 text-slate-700">${t.assignee}</td>
+                    <td class="py-3 px-4 text-slate-600">${t.service}</td>
+                    <td class="py-3 px-4 text-slate-600 whitespace-nowrap">${formatDate(t.startDate)}</td>
+                    <td class="py-3 px-4 text-slate-600 whitespace-nowrap">${formatDate(t.dueDate)}</td>
+                    <td class="py-3 px-4 text-center">${getKpiBadge(t.dueDate, t.progress)}</td>
+                    <td class="py-3 px-4 text-center">${getPriorityBadge(t.priority)}</td>
+                    <td class="py-3 px-4">
+                        <div class="flex items-center gap-2">
+                            <div class="flex-grow bg-slate-200 h-3 rounded-full overflow-hidden border border-slate-300">
+                                <div class="${barColorClass} h-full rounded-full transition-all duration-500" style="width: ${t.progress}%"></div>
+                            </div>
+                            <span class="text-xs font-semibold text-slate-600 w-9 text-right">${t.progress}%</span>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-medium ${t.status === 'Terminé' ? 'bg-emerald-100 text-emerald-800' : (t.status === 'En Cours' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800')}">
+                            ${t.status}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <div class="flex items-center justify-center gap-2">
+                            <button onclick="openModal(${t.id})" class="text-blue-600 hover:text-blue-800 p-1" title="Modifier">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button onclick="deleteTask(${t.id})" class="text-red-500 hover:text-red-700 p-1" title="Supprimer">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Export CSV simple
+        function exportData() {
+            let csv = "N;Description;Demandé par;Attribué à;Service;Date de début;Échéance;Priorité;Progression;Statut\n";
+            tasks.forEach((t, i) => {
+                csv += `${i+1};"${t.desc}";"${t.requester}";"${t.assignee}";"${t.service}";${t.startDate};${t.dueDate};${t.priority};${t.progress}%;${t.status}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'suivi_taches_mezacer.csv');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // Initialisation au chargement
+        window.onload = function() {
+            renderTable();
+        };
+    </script>
+</body>
+</html>
